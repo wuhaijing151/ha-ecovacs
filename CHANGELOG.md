@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.0.2 (2026-10-25)
+
+修正（已在真实环境验证）：
+
+- **事件循环阻塞告警全部消除**。`deebot_client` 的机型查找要扫目录、导入模块
+  （`os.listdir` / `import_module`），之前直接在事件循环里跑，HA 每次启动都会报
+  `Detected blocking call to listdir … inside the event loop` 和
+  `Detected blocking call to import_module …`。现在
+  `patch.py` 新增 `async_supported_classes` / `async_module_available` /
+  `async_install_alias` 三个执行器包装，`__init__.py`、`discovery.py`、`cloud.py`
+  的 6 处调用点全部改走它们。
+- 同步函数（`supported_classes` / `module_available` / `install_alias`）仍然保留，
+  作为纯工具函数使用，行为不变。
+
+已验证：HA Core 2026.10.0 重启后，`ecovacs_model_patch` 的 3 条阻塞调用告警全部消失，
+别名补丁照常生效（`wc8lnp -> n9f2g8`），扫地机实体正常。
+
 ## 1.0.1 (2026-10-25)
 
 修正（已在真实环境验证）：
