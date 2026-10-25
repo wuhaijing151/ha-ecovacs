@@ -59,7 +59,7 @@ from .const import (
     SERVICE_REFRESH,
 )
 from .discovery import async_discover
-from .patch import install_alias, module_available, supported_classes
+from .patch import async_install_alias, async_module_available, async_supported_classes
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -192,13 +192,15 @@ async def _async_apply(
 
     installed: list[str] = []
     for device_class, sibling in mapping.items():
-        if device_class not in overrides and module_available(device_class):
+        if device_class not in overrides and await async_module_available(
+            hass, device_class
+        ):
             _LOGGER.warning(
                 "deebot_client now supports %s - the runtime patch is not needed",
                 device_class,
             )
             continue
-        if install_alias(device_class, sibling):
+        if await async_install_alias(hass, device_class, sibling):
             installed.append(device_class)
             ir.async_delete_issue(
                 hass, DOMAIN, ISSUE_NO_SIBLING.format(device_class=device_class)
@@ -228,10 +230,11 @@ async def _async_apply(
         except Exception as err:  # noqa: BLE001 - a repair issue is nice to have
             _LOGGER.debug("Could not create a repair issue for %s: %s", device_class, err)
 
+    class_count = len(await async_supported_classes(hass))
     result: dict[str, Any] = {
         "generated": dt_util.utcnow().isoformat(),
         "ecovacs_entries": len(hass.config_entries.async_entries(ECOVACS_DOMAIN)),
-        "deebot_client_class_count": len(supported_classes()),
+        "deebot_client_class_count": class_count,
         "targets": sources,
         "mapping": mapping,
         "unresolved": unresolved,
@@ -259,7 +262,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         _LOGGER.warning("Disabled in configuration.yaml - nothing to do")
         return True
 
-    if not supported_classes():
+    if not await async_supported_classes(hass):
         _LOGGER.error(
             "deebot_client was not found. Please install/enable the official "
             "'Ecovacs' integration first."

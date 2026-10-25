@@ -91,7 +91,7 @@ async def async_get_unsupported_classes(hass: HomeAssistant) -> dict[str, str]:
     ``ApiClient.get_devices()`` returns a ``Devices`` dataclass holding already
     supported (``mqtt``) and unsupported (``xmpp``/``not_supported``) devices.
     """
-    from .patch import module_available
+    from .patch import async_module_available
 
     async with async_api_client(hass) as client:
         if client is None:
@@ -115,7 +115,7 @@ async def async_get_unsupported_classes(hass: HomeAssistant) -> dict[str, str]:
         if not isinstance(data, dict):
             continue
         device_class = data.get("class")
-        if device_class and not module_available(str(device_class)):
+        if device_class and not await async_module_available(hass, str(device_class)):
             found.setdefault(
                 str(device_class), str(data.get("deviceName") or device_class)
             )

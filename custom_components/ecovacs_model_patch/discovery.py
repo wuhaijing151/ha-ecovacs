@@ -21,7 +21,7 @@ from homeassistant.core import HomeAssistant
 
 from .cloud import async_get_iot_map
 from .const import MIN_SCORE
-from .patch import supported_classes
+from .patch import async_supported_classes
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -88,7 +88,7 @@ async def async_discover(
 ) -> tuple[dict[str, str], dict[str, Any]]:
     """Return {unsupported class: supported sibling} plus a diagnostics report."""
     wanted = [str(item) for item in wanted]
-    known = supported_classes()
+    known = await async_supported_classes(hass)
     report: dict[str, Any] = {
         "supported_class_count": len(known),
         "devices": {},

@@ -19,6 +19,7 @@ import logging
 import pkgutil
 import sys
 import types
+from typing import Any
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -99,3 +100,24 @@ def remove_alias(device_class: str) -> None:
         hardware._NOT_FOUND.add(device_class)  # noqa: SLF001
     except (ImportError, AttributeError):  # pragma: no cover - defensive
         pass
+
+
+# Every helper above touches the filesystem (``os.listdir`` while scanning the
+# hardware package, ``find_spec``/``import_module`` while resolving it), so Home
+# Assistant flags them as blocking calls when they run inside the event loop.
+# These wrappers keep them off the loop; they are what the integration calls.
+
+
+async def async_supported_classes(hass: Any) -> set[str]:
+    """Return the device classes deebot_client ships, off the event loop."""
+    return await hass.async_add_executor_job(supported_classes)
+
+
+async def async_module_available(hass: Any, device_class: str) -> bool:
+    """Return True when deebot_client already handles this class, off the loop."""
+    return await hass.async_add_executor_job(module_available, device_class)
+
+
+async def async_install_alias(hass: Any, device_class: str, sibling: str) -> bool:
+    """Register the alias module without importing it on the event loop."""
+    return await hass.async_add_executor_job(install_alias, device_class, sibling)
