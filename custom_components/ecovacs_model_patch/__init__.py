@@ -44,7 +44,7 @@ from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.util import dt as dt_util
 
-from .cloud import async_get_device_classes
+from .cloud import async_get_unsupported_classes
 from .const import (
     CACHE_FILE,
     CONF_ENABLED,
@@ -63,16 +63,21 @@ from .patch import install_alias, module_available, supported_classes
 
 _LOGGER = logging.getLogger(__name__)
 
-LEARN_MORE_URL = "https://gitee.com/wuhaijing151/ha-ecovacs#常见问题"
+LEARN_MORE_URL = "https://gitee.com/wuhaijing151/ha-ecovacs"
 
+#: ``ecovacs_model_patch:`` without a value is the documented "just add one
+#: line" configuration, so None must be accepted next to a full mapping.
 CONFIG_SCHEMA = vol.Schema(
     {
-        vol.Optional(DOMAIN): vol.Schema(
-            {
-                vol.Optional(CONF_ENABLED, default=True): cv.boolean,
-                vol.Optional(CONF_WATCH): vol.All(cv.ensure_list, [cv.string]),
-                vol.Optional(CONF_HARDWARE_OVERRIDE): {cv.string: cv.string},
-            }
+        vol.Optional(DOMAIN): vol.Any(
+            None,
+            vol.Schema(
+                {
+                    vol.Optional(CONF_ENABLED, default=True): cv.boolean,
+                    vol.Optional(CONF_WATCH): vol.All(cv.ensure_list, [cv.string]),
+                    vol.Optional(CONF_HARDWARE_OVERRIDE): {cv.string: cv.string},
+                }
+            ),
         )
     },
     extra=vol.ALLOW_EXTRA,
@@ -118,15 +123,17 @@ async def _async_detect_targets(hass: HomeAssistant) -> dict[str, str]:
     targets: dict[str, str] = {}
 
     for entry in hass.config_entries.async_entries(ECOVACS_DOMAIN):
-        devices = getattr(getattr(entry, "runtime_data", None), "devices", None)
+        # ``runtime_data`` is the Ecovacs controller and its ``devices``
+        # attribute holds deebot_client's Devices dataclass.
+        runtime = getattr(entry, "runtime_data", None)
+        devices = getattr(runtime, "devices", runtime)
         for device in getattr(devices, "not_supported", None) or []:
-            device_class = device.get("class") if isinstance(device, dict) else None
-            if device_class:
+            data = getattr(device, "api", device)
+            if isinstance(data, dict) and (device_class := data.get("class")):
                 targets.setdefault(str(device_class), "ecovacs controller")
 
-    for device_class in sorted(await async_get_device_classes(hass)):
-        if not module_available(device_class):
-            targets.setdefault(device_class, "ecovacs cloud")
+    for device_class, name in (await async_get_unsupported_classes(hass)).items():
+        targets.setdefault(device_class, f"ecovacs cloud ({name})")
 
     return targets
 
@@ -202,21 +209,24 @@ async def _async_apply(
         product = (
             report.get("devices", {}).get(device_class, {}).get("product") or {}
         )
-        ir.async_create_issue(
-            hass,
-            DOMAIN,
-            ISSUE_NO_SIBLING.format(device_class=device_class),
-            is_fixable=False,
-            severity=ir.IssueSeverity.WARNING,
-            translation_key="no_sibling_found",
-            translation_placeholders={
-                "device_class": device_class,
-                "product": str(
-                    product.get("name") or product.get("model") or device_class
-                ),
-            },
-            learn_more_url=LEARN_MORE_URL,
-        )
+        try:
+            ir.async_create_issue(
+                hass,
+                DOMAIN,
+                ISSUE_NO_SIBLING.format(device_class=device_class),
+                is_fixable=False,
+                severity=ir.IssueSeverity.WARNING,
+                translation_key="no_sibling_found",
+                translation_placeholders={
+                    "device_class": device_class,
+                    "product": str(
+                        product.get("name") or product.get("model") or device_class
+                    ),
+                },
+                learn_more_url=LEARN_MORE_URL,
+            )
+        except Exception as err:  # noqa: BLE001 - a repair issue is nice to have
+            _LOGGER.debug("Could not create a repair issue for %s: %s", device_class, err)
 
     result: dict[str, Any] = {
         "generated": dt_util.utcnow().isoformat(),

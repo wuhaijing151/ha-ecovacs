@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.1 (2026-10-25)
+
+修正（已在真实环境验证）：
+
+- 配置支持裸键写法 `ecovacs_model_patch:`（此前只接受带子项的映射，裸键会报配置错误）
+- 修正云端设备列表解析：`ApiClient.get_devices()` 返回的是 `Devices` 数据类
+  （`mqtt` / `xmpp` / `not_supported`），不是设备数组
+- 侦测逻辑兼容 `runtime_data` 为控制器或 `Devices` 两种形态
+- 修复通知创建失败不再影响补丁主体
+
 ## 1.0.0 (2026-10-25)
 
 首个版本。

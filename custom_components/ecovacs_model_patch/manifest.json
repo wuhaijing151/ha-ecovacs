@@ -11,5 +11,5 @@
   "issue_tracker": "https://gitee.com/wuhaijing151/ha-ecovacs/issues",
   "loggers": ["deebot_client"],
   "requirements": [],
-  "version": "1.0.0"
+  "version": "1.0.1"
 }

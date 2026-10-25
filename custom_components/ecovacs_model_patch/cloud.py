@@ -85,19 +85,38 @@ async def async_get_iot_map(hass: HomeAssistant) -> dict[str, dict[str, Any]]:
             return {}
 
 
-async def async_get_device_classes(hass: HomeAssistant) -> set[str]:
-    """Return the device classes bound to the account."""
+async def async_get_unsupported_classes(hass: HomeAssistant) -> dict[str, str]:
+    """Return {device class: device name} for devices deebot_client cannot handle.
+
+    ``ApiClient.get_devices()`` returns a ``Devices`` dataclass holding already
+    supported (``mqtt``) and unsupported (``xmpp``/``not_supported``) devices.
+    """
+    from .patch import module_available
+
     async with async_api_client(hass) as client:
         if client is None:
-            return set()
+            return {}
         try:
-            devices = await client.get_devices() or []
+            devices = await client.get_devices()
         except Exception as err:  # noqa: BLE001 - cloud errors must not break setup
             _LOGGER.warning("Could not fetch the Ecovacs device list: %s", err)
-            return set()
+            return {}
 
-    classes: set[str] = set()
-    for device in devices:
-        if isinstance(device, dict) and (device_class := device.get("class")):
-            classes.add(str(device_class))
-    return classes
+    candidates: list[Any] = []
+    for attribute in ("not_supported", "xmpp", "mqtt"):
+        value = getattr(devices, attribute, None)
+        if isinstance(value, (list, tuple)):
+            candidates.extend(value)
+
+    found: dict[str, str] = {}
+    for item in candidates:
+        # DeviceInfo wraps the API payload, plain API entries are dicts.
+        data = getattr(item, "api", item)
+        if not isinstance(data, dict):
+            continue
+        device_class = data.get("class")
+        if device_class and not module_available(str(device_class)):
+            found.setdefault(
+                str(device_class), str(data.get("deviceName") or device_class)
+            )
+    return found
