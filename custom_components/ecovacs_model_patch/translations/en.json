@@ -1,0 +1,21 @@
+{
+  "title": "Ecovacs Unsupported Model Patch",
+  "services": {
+    "refresh": {
+      "name": "Refresh model detection",
+      "description": "Detect a supported sibling model again and reload the Ecovacs integration.",
+      "fields": {
+        "rediscover": {
+          "name": "Rediscover",
+          "description": "Ignore the cache and query the Ecovacs cloud again."
+        }
+      }
+    }
+  },
+  "issues": {
+    "no_sibling_found": {
+      "title": "Unsupported Ecovacs model: {device_class}",
+      "description": "The device class `{device_class}` ({product}) is not supported by deebot_client and no similar supported model was found. Set `hardware_override` in the configuration of this integration to pick a model manually, or report your model upstream at https://github.com/DeebotUniverse/client.py."
+    }
+  }
+}

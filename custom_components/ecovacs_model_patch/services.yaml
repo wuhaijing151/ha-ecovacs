@@ -1,0 +1,7 @@
+refresh:
+  fields:
+    rediscover:
+      required: false
+      default: false
+      selector:
+        boolean:

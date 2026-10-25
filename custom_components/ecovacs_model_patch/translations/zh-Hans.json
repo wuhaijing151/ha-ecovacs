@@ -1,0 +1,21 @@
+{
+  "title": "科沃斯未知机型补丁",
+  "services": {
+    "refresh": {
+      "name": "重新侦测机型",
+      "description": "重新侦测可复用的已支持机型，并重新加载科沃斯集成。",
+      "fields": {
+        "rediscover": {
+          "name": "忽略缓存",
+          "description": "忽略本地缓存，重新向科沃斯云端查询。"
+        }
+      }
+    }
+  },
+  "issues": {
+    "no_sibling_found": {
+      "title": "不支持的科沃斯机型：{device_class}",
+      "description": "机型代码 `{device_class}`（{product}）尚未被 deebot_client 支持，也没有找到足够相似的已支持机型。可在本集成配置中用 `hardware_override` 手动指定复用机型，或到 https://github.com/DeebotUniverse/client.py 提交你的机型。"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "domain": "ecovacs_model_patch",
+  "name": "Ecovacs Unsupported Model Patch",
+  "codeowners": ["@wuhaijing151"],
+  "config_flow": false,
+  "dependencies": [],
+  "after_dependencies": ["ecovacs"],
+  "documentation": "https://gitee.com/wuhaijing151/ha-ecovacs",
+  "integration_type": "service",
+  "iot_class": "cloud_push",
+  "issue_tracker": "https://gitee.com/wuhaijing151/ha-ecovacs/issues",
+  "loggers": ["deebot_client"],
+  "requirements": [],
+  "version": "1.0.0"
+}
